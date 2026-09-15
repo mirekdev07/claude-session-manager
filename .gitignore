@@ -1,0 +1,19 @@
+node_modules/
+out/
+dist/
+release/
+.tmp/
+smoke-report.txt
+*.log
+.DS_Store
+.vite/
+*.tsbuildinfo
+.vscode/
+.idea/
+
+# Prywatne: analiza prawdziwych sesji (nazwy projektow, zuzycie tokenow).
+plan.md
+docs/ROADMAP.md
+
+# Mockup odrzuconego wariantu interfejsu - mylilby czytelnika.
+mockup.png

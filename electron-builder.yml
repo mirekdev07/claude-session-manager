@@ -1,0 +1,33 @@
+appId: dev.mirek.claude-session-manager
+productName: Claude Session Manager
+directories:
+  output: release
+  buildResources: resources
+
+# node-pty i better-sqlite3 dostarczają prebuildy N-API, które działają w Electronie bez
+# przebudowy. Domyślny rebuild electron-buildera nie tylko jest zbędny — wywraca się tu na
+# `GetCommitHash.bat` (zmienna NoDefaultCurrentDirectoryInExePath) i kasuje działające binaria.
+npmRebuild: false
+
+files:
+  - out/**
+  - package.json
+
+# Moduły natywne muszą trafić do paczki rozpakowane — z asara nie da się załadować .node.
+asarUnpack:
+  - '**/node_modules/node-pty/**'
+  - '**/node_modules/better-sqlite3/**'
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName} Setup ${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Claude Session Manager
