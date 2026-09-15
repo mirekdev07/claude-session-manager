@@ -1,71 +1,74 @@
 # Claude Session Manager
 
-Graficzny menedżer [Claude Code](https://claude.com/claude-code) dla Windows. Uruchamia
-**prawdziwe** `claude.exe` w terminalach wewnątrz aplikacji — to nie jest wrapper wokół API
-ani własny klient czatu. Wszystko, co działa w terminalu, działa tu tak samo, bo pod spodem
-jest ten sam proces.
+A desktop manager for [Claude Code](https://claude.com/claude-code) on Windows. It runs the
+**real** `claude.exe` inside terminals in the app — this is not an API wrapper or a custom chat
+client. Anything that works in your terminal works here, because underneath it is the same
+process.
 
-Do czego służy:
+> **Note:** the application interface is in **Polish**. The code, comments and this document are
+> the only English-facing parts. All UI strings live in one file (`src/shared/i18n/messages.ts`),
+> so translating the app is a single-file job.
 
-- **Projekty i sesje pod ręką** — lista katalogów wykryta z `~/.claude/projects`, a przy każdej
-  rozmowie tytuł, rozmiar, gałąź gita i szczytowy kontekst.
-- **Kilka terminali naraz** — zakładki, widok podzielony, restart zakończonej sesji, przywracanie
-  po restarcie aplikacji.
-- **Obrazy** — `Ctrl+V`, przeciągnięcie na okno albo zaznaczenie fragmentu ekranu; obraz trafia
-  do Claude'a jako natywny załącznik `[Image #N]`, nie jako ścieżka do odczytania.
-- **Dyktowanie** — lokalny whisper.cpp, bez wysyłania nagrań gdziekolwiek.
-- **Wyszukiwanie pełnotekstowe** po wszystkich rozmowach (SQLite FTS5).
-- **Analityka zużycia** liczona lokalnie z transkryptów: udział projektów, „co zjadło kontekst",
-  podgląd limitów subskrypcji.
+What it gives you:
 
-Wszystkie dane zostają na dysku: aplikacja czyta transkrypty, które Claude Code i tak zapisuje,
-a własny indeks trzyma w `%APPDATA%\claude-session-manager`. Nic nie jest wysyłane na zewnątrz.
+- **Projects and sessions at hand** — a list of directories discovered from `~/.claude/projects`,
+  with each conversation's title, size, git branch and peak context.
+- **Several terminals at once** — tabs, split view, restarting a finished session, restoring tabs
+  after an app restart.
+- **Images** — `Ctrl+V`, drag onto the window, or grab a region of the screen. The image reaches
+  Claude as a native `[Image #N]` attachment, not as a path to be read back.
+- **Dictation** — local whisper.cpp; recordings never leave the machine.
+- **Full-text search** across every conversation (SQLite FTS5).
+- **Usage analytics** computed locally from transcripts: share per project, "what ate the
+  context", subscription limits at a glance.
+
+All data stays on disk: the app reads transcripts Claude Code writes anyway and keeps its own
+index in `%APPDATA%\claude-session-manager`. Nothing is sent anywhere.
 
 ---
 
-## Wymagania
+## Requirements
 
-| Składnik | Wersja | Uwagi |
+| Component | Version | Notes |
 |---|---|---|
-| Windows | 10 lub 11, x64 | aplikacja jest wyłącznie windowsowa (ConPTY, instalator NSIS) |
-| Node.js | 22 LTS lub nowszy | rozwijane na 25.x; potrzebne tylko do budowania ze źródeł |
-| Claude Code | dowolna aktualna | musi być zainstalowany **i zalogowany** |
-| whisper.cpp | opcjonalnie | tylko jeśli chcesz dyktować prompty |
+| Windows | 10 or 11, x64 | Windows-only (ConPTY, NSIS installer) |
+| Node.js | 22 LTS or newer | developed on 25.x; needed only to build from source |
+| Claude Code | any current release | must be installed **and logged in** |
+| whisper.cpp | optional | only if you want to dictate prompts |
 
 ### Claude Code
 
-Aplikacja nie zastępuje Claude Code — uruchamia ten, który masz w systemie. Jeśli go jeszcze
-nie ma:
+The app does not replace Claude Code — it launches the one you already have. If you don't:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
-claude          # pierwsze uruchomienie: logowanie, potem wyjdź przez /exit
+claude          # first run: sign in, then leave with /exit
 ```
 
-Sprawdź, że system go widzi:
+Check that the system can find it:
 
 ```bash
 where claude
 claude --version
 ```
 
-Jeśli `where claude` nic nie zwraca, a plik masz — ścieżkę można wskazać ręcznie
-w Ustawieniach → Claude Code → Własna ścieżka.
+If `where claude` finds nothing but you do have the file, point at it manually under
+Settings → Claude Code → custom path.
 
 ---
 
-## Instalacja
+## Installation
 
-### Wariant A — gotowy instalator
+### Option A — prebuilt installer
 
-Pobierz `Claude Session Manager Setup <wersja>.exe` z zakładki **Releases** i uruchom.
-Instalator NSIS pozwala wybrać katalog, zakłada skrót na pulpicie i w menu Start.
-Instaluje się dla użytkownika, więc nie potrzebuje uprawnień administratora.
+Download `Claude Session Manager Setup <version>.exe` from **Releases** and run it. The NSIS
+installer lets you pick a directory and creates desktop and Start menu shortcuts. It installs
+per-user, so it needs no administrator rights.
 
-Windows SmartScreen pokaże ostrzeżenie o nieznanym wydawcy — plik nie jest podpisany
-certyfikatem. „Więcej informacji" → „Uruchom mimo to".
+Windows SmartScreen will warn about an unknown publisher — the binary is not code-signed.
+Choose "More info" → "Run anyway".
 
-### Wariant B — ze źródeł
+### Option B — from source
 
 ```bash
 git clone https://github.com/mirekdev07/claude-session-manager.git
@@ -73,214 +76,214 @@ cd claude-session-manager
 npm install
 ```
 
-`npm install` **nie** przebudowuje modułów natywnych i tak ma być — `node-pty`
-i `better-sqlite3` dostarczają prebuildy N-API, które działają w Electronie bez kompilacji.
+`npm install` does **not** rebuild native modules, and that is intentional — `node-pty` and
+`better-sqlite3` ship **N-API** prebuilds that run under Electron without compilation.
 
-Potem jedno z:
+Then one of:
 
 ```bash
-npm run dev        # tryb deweloperski z hot-reloadem
-npm run build      # typecheck + build produkcyjny do out/
-npm start          # podgląd zbudowanej wersji
-npm run package    # instalator NSIS → release/
+npm run dev        # development mode with hot reload
+npm run build      # typecheck + production build into out/
+npm start          # preview the built version
+npm run package    # NSIS installer → release/
 ```
 
-Po `npm run package` znajdziesz w `release/`:
+After `npm run package` you get, in `release/`:
 
-- `Claude Session Manager Setup <wersja>.exe` — instalator,
-- `win-unpacked/Claude Session Manager.exe` — wersja przenośna, działa bez instalacji.
+- `Claude Session Manager Setup <version>.exe` — the installer,
+- `win-unpacked/Claude Session Manager.exe` — a portable build that runs without installing.
 
-> Uruchamiając `npm run dev` **z wnętrza sesji Claude Code** pamiętaj, że aplikacja czyści
-> markery sesji-rodzica przed startem procesu potomnego — jej własne sesje zapiszą się
-> poprawnie, ale sesja-rodzic jest wtedy w nietypowym stanie. Do testów wygodniej odpalić
-> ją ze zwykłego terminala.
-
----
-
-## Pierwsze uruchomienie
-
-1. Aplikacja skanuje `~/.claude/projects` i buduje listę projektów oraz rozmów. Przy pierwszym
-   razie, gdy masz setki megabajtów transkryptów, pasek postępu na dole lewej kolumny chodzi
-   kilkanaście sekund. Interfejs działa w tym czasie normalnie.
-2. Projekty wykryte automatycznie trafiają do sekcji **Wykryte**. Kliknij gwiazdkę przy tych,
-   których używasz — wskoczą do **Przypięte** na górze.
-3. Wybierz projekt i naciśnij **Nowa sesja**.
-
-Wskaźnik zużycia limitów w górnej belce wypełnia się po kilku sekundach — pierwszy odczyt
-wymaga uruchomienia `claude -p "/usage"` w tle.
+> Running `npm run dev` **from inside a Claude Code session** is worth a thought: the app clears
+> the parent-session markers before starting its child process, so its own sessions record
+> correctly, but the parent session is then in an unusual state. For testing, a plain terminal
+> is easier.
 
 ---
 
-## ⚠️ Uprawnienia sesji
+## First run
 
-Każda sesja uruchamiana z aplikacji (nowa, kontynuowana, wznowiona, fork) startuje z flagą
-**`--dangerously-skip-permissions`**, więc Claude nie przerywa pracy pytaniem o zgodę na
-narzędzia — sam czyta i zapisuje pliki oraz wykonuje polecenia.
+1. The app scans `~/.claude/projects` and builds the list of projects and conversations. On the
+   first run, with hundreds of megabytes of transcripts, the progress bar at the bottom of the
+   left column runs for a dozen or so seconds. The interface stays usable meanwhile.
+2. Automatically discovered projects land in the **Wykryte** (Discovered) section. Click the star
+   on the ones you actually use and they move to **Przypięte** (Pinned) at the top.
+3. Pick a project and press **Nowa sesja** (New session).
 
-To wygodne przy dłuższej pracy, ale oznacza, że model może zmodyfikować albo usunąć dowolny
-plik, do którego masz dostęp, również poza katalogiem projektu. Świadomie zostało to wystawione
-jako przełącznik: **Ustawienia → Claude Code → Uruchamiaj bez pytań o zgodę**. Wyłączenie
-przywraca normalne pytania Claude Code.
-
-Bezgłowe sondy (`/usage`, generowanie handoffu) flagi nie dostają — nie uruchamiają narzędzi.
-
-`npm run verify:args` sprawdza to na żywo: startuje sesję w każdym trybie i odczytuje linię
-poleceń potomka z systemu, zamiast wierzyć lekturze kodu.
+The usage indicator in the top bar fills in after a few seconds — the first reading has to run
+`claude -p "/usage"` in the background.
 
 ---
 
-## Konfiguracja
+## ⚠️ Session permissions
 
-Ustawienia otwiera ikona koła zębatego w prawym górnym rogu albo `Ctrl+K` → „Ustawienia".
+Every session started from the app (new, continued, resumed, forked) launches with
+**`--dangerously-skip-permissions`**, so Claude never stops to ask for consent to use a tool —
+it reads and writes files and runs commands on its own.
 
-**Claude Code** — wykryta ścieżka i wersja, własna ścieżka do `claude.exe`, dodatkowe argumenty
-dopisywane do każdego uruchomienia, przełącznik pytań o zgodę.
+That is convenient for long stretches of work, but it means the model can modify or delete any
+file you have access to, including outside the project directory. This is deliberately exposed
+as a switch: **Settings → Claude Code → "Uruchamiaj bez pytań o zgodę"**. Turning it off restores
+Claude Code's normal prompts.
 
-**Głos** — silnik whisper.cpp, model, język mowy, liczba wątków CPU. Szczegóły niżej.
+Headless probes (`/usage`, handoff generation) do not get the flag — they run no tools.
 
-**Obrazy** — sposób przekazywania obrazu do sesji (domyślny `bracketed-path` jest jedynym
-zmierzonym, przy którym Claude Code tworzy natywny załącznik) i po ilu godzinach sprzątać cache.
-
-**Sesje** — powiadomienia systemowe, progi „zdrowia" sesji w tokenach, przywracanie zakładek
-po restarcie.
-
-**Wygląd** — rozmiar i krój czcionki terminala.
-
-### Dyktowanie (whisper.cpp)
-
-Aplikacja pobiera **model** samodzielnie (Ustawienia → Głos → Pobierz), ale **nie pobiera pliku
-wykonywalnego** — wskazujesz własny `whisper-cli.exe`.
-
-1. Pobierz build whisper.cpp dla Windows (np. z [releases projektu](https://github.com/ggml-org/whisper.cpp/releases))
-   i rozpakuj gdziekolwiek, np. `D:\Tools\whisper`.
-2. Ustawienia → Głos → **Wskaż plik** → `whisper-cli.exe`.
-3. Wybierz model i naciśnij **Pobierz**. Przy karcie NVIDIA warto wziąć `large-v3-turbo`
-   (~1,6 GB); na słabszej maszynie `small` albo `base`.
-4. Ustaw **Język mowy**. „Automatyczny" bywa zawodny przy krótkich nagraniach — wymuszenie
-   polskiego jest pewniejsze.
-
-Nagrywanie: `Ctrl+Shift+Space` (przytrzymaj) albo ikona mikrofonu. Transkrypcja trafia do pola
-tekstowego nad paskiem statusu — nigdy nie jest wysyłana automatycznie.
+`npm run verify:args` checks this for real: it starts a session in every mode and reads the
+child's command line from the operating system instead of trusting a reading of the code.
 
 ---
 
-## Skróty
+## Configuration
 
-| Skrót | Działanie |
+Settings open from the gear icon in the top-right corner, or `Ctrl+K` → "Ustawienia".
+
+**Claude Code** — detected path and version, custom `claude.exe` path, extra arguments appended
+to every launch, the permission-prompt switch.
+
+**Głos (Voice)** — whisper.cpp engine, model, speech language, CPU threads. Details below.
+
+**Obrazy (Images)** — how an image is handed to the session (the default `bracketed-path` is the
+only measured method where Claude Code creates a native attachment) and how many hours before the
+cache is swept.
+
+**Sesje (Sessions)** — system notifications, session "health" thresholds in tokens, restoring tabs
+after a restart.
+
+**Wygląd (Appearance)** — terminal font size and family.
+
+### Dictation (whisper.cpp)
+
+The app downloads the **model** on its own (Settings → Głos → Pobierz), but it does **not**
+download the executable — you point it at your own `whisper-cli.exe`.
+
+1. Grab a Windows build of whisper.cpp (for example from the
+   [project releases](https://github.com/ggml-org/whisper.cpp/releases)) and unpack it anywhere,
+   e.g. `D:\Tools\whisper`.
+2. Settings → Głos → **Wskaż plik** (Choose file) → `whisper-cli.exe`.
+3. Pick a model and press **Pobierz** (Download). With an NVIDIA card `large-v3-turbo` (~1.6 GB)
+   is worth it; on a weaker machine use `small` or `base`.
+4. Set the **speech language**. "Automatic" is unreliable on short recordings — forcing the
+   language is safer.
+
+Recording: `Ctrl+Shift+Space` (hold) or the microphone icon. The transcript lands in the text box
+above the status bar — it is never sent automatically.
+
+---
+
+## Shortcuts
+
+| Shortcut | Action |
 |---|---|
-| `Ctrl+K` | paleta poleceń |
-| `Ctrl+Shift+F` | wyszukiwanie po wszystkich rozmowach |
-| `Ctrl+Shift+Space` | dyktowanie (przytrzymaj) |
-| `Ctrl+V` nad terminalem | obraz → załącznik, tekst → zwykłe wklejenie |
-| `Ctrl+Shift+C` / `Ctrl+Insert` | kopiuje zaznaczenie z terminala |
-| `Ctrl+C` z zaznaczeniem | kopiuje i czyści zaznaczenie; drugie naciśnięcie przerywa pracę Claude'a |
-| `Ctrl+C` bez zaznaczenia | przerywa pracę Claude'a (zwykłe zachowanie terminala) |
-| `Ctrl+Shift+A` | zaznacza cały bufor |
-| prawy przycisk myszy w terminalu | menu: Kopiuj / Wklej / Zaznacz wszystko |
-| `Enter` w polu nad terminalem | wysyła prompt razem z załącznikami |
-| `Esc` | anuluje nagrywanie, zamyka podgląd, menu i palety |
-| środkowy przycisk myszy na zakładce | zamyka zakładkę |
+| `Ctrl+K` | command palette |
+| `Ctrl+Shift+F` | search across all conversations |
+| `Ctrl+Shift+Space` | dictate (hold) |
+| `Ctrl+V` over the terminal | image → attachment, text → ordinary paste |
+| `Ctrl+Shift+C` / `Ctrl+Insert` | copy the terminal selection |
+| `Ctrl+C` with a selection | copies and clears the selection; a second press interrupts Claude |
+| `Ctrl+C` without a selection | interrupts Claude (normal terminal behaviour) |
+| `Ctrl+Shift+A` | select the whole buffer |
+| right click in the terminal | menu: Copy / Paste / Select all |
+| `Enter` in the box above the terminal | sends the prompt together with attachments |
+| `Esc` | cancels recording, closes preview, menus and palettes |
+| middle click on a tab | closes the tab |
 
 ---
 
-## Analityka i zdrowie sesji
+## Analytics and session health
 
-Każda sesja ma kropkę zdrowia liczoną ze szczytowego kontekstu (progi w Ustawieniach → Sesje).
-Przy wznawianiu ciężkiej sesji aplikacja ostrzega i proponuje **handoff** — nową sesję startującą
-od podsumowania zamiast od setek tysięcy tokenów. To jedyna funkcja, która wywołuje model
-i kosztuje limit; działa wyłącznie na żądanie, z podglądem i możliwością edycji przed wysłaniem.
+Every session carries a health dot derived from its peak context (thresholds under Settings →
+Sesje). When you resume a heavy session the app warns you and offers a **handoff** — a new session
+that starts from a summary instead of hundreds of thousands of tokens. This is the only feature
+that calls the model and spends quota; it runs on demand only, and you see and can edit the
+summary before it is sent.
 
-Kliknięcie wskaźnika zużycia w belce pokazuje udział projektów w oknie 24 h / 7 dni / 30 dni.
-Ikona wykresu przy sesji otwiera „Co zjadło kontekst" — rozbicie na narzędzia i największe
-pojedyncze wyniki. Wszystko liczone lokalnie z transkryptów, przyrostowo, bez API i bez kosztu.
+Clicking the usage indicator in the top bar shows the share per project over 24 h / 7 days /
+30 days. The chart icon next to a session opens "what ate the context" — a breakdown by tool and
+the largest individual results. Everything is computed locally from transcripts, incrementally,
+with no API calls and no cost.
 
-Powiadomienie systemowe pojawia się, gdy sesja w nieaktywnej zakładce skończy zleconą pracę.
+A system notification appears when a session in an inactive tab finishes work you asked for.
 
 ---
 
-## Rozwój
+## Development
 
 ```bash
-npm run verify              # wszystkie zestawy poniżej
-npm run verify:transcripts  # odczyt sesji na prawdziwych danych z ~/.claude/projects
-npm run verify:storage      # schemat SQLite i zapytania cache
-npm run verify:native       # node-pty, better-sqlite3 i start claude.exe w PTY
-npm run verify:metrics      # parser przyrostowy metryk zgodny z parsowaniem od zera
-npm run verify:usage        # parser raportu /usage na prawdziwym wyjściu CLI
-npm run verify:args         # z jakimi argumentami startuje claude w każdym trybie
-npm run verify:inject       # która strategia przekazywania obrazów działa
+npm run verify              # every suite below
+npm run verify:transcripts  # session reading against real data in ~/.claude/projects
+npm run verify:storage      # SQLite schema and cache queries
+npm run verify:native       # node-pty, better-sqlite3 and starting claude.exe in a PTY
+npm run verify:metrics      # incremental metrics parser matches a full parse from scratch
+npm run verify:usage        # /usage report parser against real CLI output
+npm run verify:args         # what arguments claude actually starts with, per mode
+npm run verify:inject       # which image-handoff strategy works
 ```
 
-Skrypty korzystające z modułów natywnych działają pod środowiskiem Node **Electrona**
-(`scripts/run-under-electron.mjs`), bo `node-pty` i `better-sqlite3` są skompilowane pod ABI
-Electrona, nie systemowego Node. Testy celowo uruchamiają prawdziwe procesy i czytają prawdziwe
-transkrypty — zamiast atrapy sprawdzają to, co faktycznie zobaczy użytkownik.
+Scripts touching native modules run under **Electron's** Node
+(`scripts/run-under-electron.mjs`), because `node-pty` and `better-sqlite3` are built against
+Electron's ABI, not the system Node's. The tests deliberately spawn real processes and read real
+transcripts — instead of mocks, they check what the user will actually see.
 
-### Co gdzie leży
+### Layout
 
 ```
 src/
-  main/       proces główny — PTY, odczyt sesji, obrazy, mowa, SQLite
-    claude/     lokalizowanie CLI, procesy PTY, parsery transkryptów, /usage, handoff
-    images/     cache obrazów, schowek, strategie wstrzykiwania, zrzut ekranu
-    ipc/        handlery kanałów IPC, każdy z walidacją zod
-    storage/    migracje SQLite, cache sesji, ustawienia
-  preload/    most contextBridge; renderer nie dostaje ipcRenderer
-  shared/     kontrakt IPC, typy, schematy walidacji i napisy interfejsu
-  renderer/   React: projekty, sesje, terminale, obrazy, głos, ustawienia
+  main/       main process — PTY, session reading, images, speech, SQLite
+    claude/     locating the CLI, PTY processes, transcript parsers, /usage, handoff
+    images/     image cache, clipboard, injection strategies, screen capture
+    ipc/        IPC channel handlers, each with zod validation
+    storage/    SQLite migrations, session cache, settings
+  preload/    contextBridge; the renderer never receives ipcRenderer
+  shared/     IPC contract, types, validation schemas and UI strings
+  renderer/   React: projects, sessions, terminals, images, voice, settings
 docs/superpowers/
-  specs/      architektura i decyzje projektowe
-  plans/      plan wdrożenia z wynikami pomiarów
-scripts/      skrypty weryfikujące
+  specs/      architecture and design decisions
+  plans/      implementation plan with measurement results
+scripts/      verification scripts
 ```
 
-### Napisy interfejsu
+### UI strings
 
-Aplikacja jest po polsku. Wszystkie napisy (interfejs, komunikaty błędów z procesu głównego,
-powiadomienia systemowe, eksport, prompt handoffu) leżą w `src/shared/i18n/messages.ts` — klucz,
-którego tam nie ma, to błąd kompilacji, nie pusty napis w oknie. Liczba mnoga idzie przez
-`Intl.PluralRules`, daty przez `toLocale*String('pl-PL')`.
-
----
-
-## Rozwiązywanie problemów
-
-**„Nie znaleziono Claude Code"** — zainstaluj CLI i zaloguj się (`claude`), a potem uruchom
-aplikację ponownie. Jeśli `claude` jest w nietypowym miejscu, wskaż plik w Ustawieniach →
-Claude Code → Własna ścieżka. Aplikacja sama rozwiązuje shim `claude.cmd` do natywnego
-`claude.exe`, żeby nie uruchamiać sesji przez pośredni `cmd.exe`.
-
-**Sesje nie zapisują się w `~/.claude/projects`** — zwykle znaczy, że aplikacja została
-uruchomiona z wnętrza innej sesji Claude Code i proces potomny odziedziczył markery
-sesji-rodzica. Aplikacja je czyści, więc problem dotyczy tylko starszych wersji; w razie
-wątpliwości odpal ją ze zwykłego terminala.
-
-**Błąd ładowania modułu natywnego (ABI / `.node`)** — nie przebudowuj ich ręcznie. Prebuildy
-N-API są zgodne z Electronem, a `electron-rebuild` psuje działające binaria. Gdyby build ze
-źródeł naprawdę był potrzebny, służy do tego `npm run rebuild:from-source`; skrypt obchodzi
-problem ze zmienną `NoDefaultCurrentDirectoryInExePath`, przez którą `winpty.gyp` nie potrafi
-wywołać własnego pliku wsadowego. Kompilacja wymaga dodatkowo bibliotek **Spectre** dla MSVC —
-`node-pty/binding.gyp` wymusza `SpectreMitigation`, a instalacje Visual Studio nie mają ich
-domyślnie.
-
-**Dyktowanie zwraca angielski zamiast polskiego** — ustaw jawnie język mowy w Ustawieniach.
-Domyślną wartością whisper-cli jest `en`, więc przy „automatycznym" krótkie nagrania bywają
-tłumaczone zamiast przepisywane.
-
-**Brak powiadomień systemowych** — sprawdź, czy Windows nie ma włączonego trybu skupienia
-i czy powiadomienia dla aplikacji są dozwolone w ustawieniach systemu. Powiadomienie pojawia
-się tylko po pracy, którą sam zleciłeś, i tylko gdy okno nie ma fokusu albo patrzysz na inną
-zakładkę.
-
-**Obraz ze schowka nie dodaje się jako załącznik** — sprawdź w Ustawieniach → Obrazy, czy
-wybrana jest strategia `bracketed-path`. Pozostałe dwie są wariantami zapasowymi i nie tworzą
-natywnego załącznika.
+The interface is in Polish. Every string (UI, main-process error messages, system notifications,
+export, the handoff prompt) lives in `src/shared/i18n/messages.ts` — a key that is not there is
+a compile error, not an empty label in the window. Plurals go through `Intl.PluralRules`, dates
+through `toLocale*String('pl-PL')`. Translating the app means replacing that one catalogue.
 
 ---
 
-## Licencja
+## Troubleshooting
+
+**"Nie znaleziono Claude Code" (Claude Code not found)** — install the CLI, sign in (`claude`),
+then restart the app. If `claude` lives somewhere unusual, point at the file under Settings →
+Claude Code. The app resolves the `claude.cmd` shim to the native `claude.exe` on its own, so
+sessions do not run through an intermediate `cmd.exe`.
+
+**Sessions are not saved to `~/.claude/projects`** — usually means the app was started from inside
+another Claude Code session and the child process inherited the parent-session markers. The app
+clears them, so this only affects older builds; if in doubt, start it from a plain terminal.
+
+**Native module fails to load (ABI / `.node`)** — do not rebuild them by hand. The N-API prebuilds
+are Electron-compatible and `electron-rebuild` destroys working binaries. If a source build is
+genuinely needed, use `npm run rebuild:from-source`; the script works around the
+`NoDefaultCurrentDirectoryInExePath` environment variable, which stops `winpty.gyp` from invoking
+its own batch file. Compiling also needs the MSVC **Spectre** libraries — `node-pty/binding.gyp`
+forces `SpectreMitigation` and Visual Studio installs do not ship them by default.
+
+**Dictation returns English instead of your language** — set the speech language explicitly.
+`whisper-cli` defaults to `en`, so on "automatic" short recordings are translated rather than
+transcribed.
+
+**No system notifications** — check that Windows focus assist is off and that notifications are
+allowed for the app. A notification only fires after work you asked for, and only when the window
+is unfocused or you are looking at another tab.
+
+**A clipboard image is not added as an attachment** — under Settings → Obrazy, make sure the
+`bracketed-path` strategy is selected. The other two are fallbacks and do not produce a native
+attachment.
+
+---
+
+## License
 
 [MIT](LICENSE).
 
-Projekt nie jest powiązany z Anthropic. „Claude" i „Claude Code" są znakami należącymi
-do Anthropic.
+Not affiliated with Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic.
